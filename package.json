@@ -1,0 +1,44 @@
+{
+  "name": "deny-sh-mcp",
+  "version": "1.0.0",
+  "description": "Model Context Protocol server for deny.sh deniable encryption. Lets any MCP-compatible AI agent call deny.sh tools.",
+  "main": "deny-mcp-server.cjs",
+  "bin": {
+    "deny-sh-mcp": "deny-mcp-server.cjs"
+  },
+  "files": [
+    "deny-mcp-server.cjs",
+    "README.md",
+    "LICENSE",
+    "COMMERCIAL-LICENSE.md"
+  ],
+  "scripts": {
+    "start": "node deny-mcp-server.cjs",
+    "smoke": "node smoke.cjs"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "deniable-encryption",
+    "deny",
+    "deny-sh",
+    "encryption",
+    "ai-agent",
+    "claude",
+    "anthropic",
+    "privacy"
+  ],
+  "homepage": "https://deny.sh",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deny-sh-crypto/deny-mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/deny-sh-crypto/deny-mcp/issues"
+  },
+  "author": "deny.sh",
+  "license": "AGPL-3.0-or-later",
+  "engines": {
+    "node": ">=18"
+  }
+}
