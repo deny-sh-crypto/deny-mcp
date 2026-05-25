@@ -72,24 +72,33 @@ async function api(method, path, body) {
 
 // ─── Local crypto (no API needed) ───
 const crypto = require('crypto');
+const { argon2id } = require('hash-wasm');
 
 // P0-8 (ii): MUST match src/core.ts:deriveKey() byte-for-byte, otherwise
 // MCP-encrypted ciphertexts cannot be decrypted by the SDK / API and
-// vice-versa. The old form `scrypt(Buffer.from(pw1+pw2), salt, ...)` had a
-// length-ambiguity bug: scryptDerive('foo','bar') == scryptDerive('foob','ar').
-// core.ts hashes each password to 32 bytes via SHA-256 first, then
-// concatenates, eliminating the ambiguity.
-function scryptDerive(pw1, pw2, salt) {
+// vice-versa. core.ts hashes each password to 32 bytes via SHA-256 first,
+// then concatenates, eliminating any length-ambiguity. As of v2.0.0 both
+// the SDK and MCP local KDF use Argon2id (t=3, m=64MiB, p=1) over that
+// SHA-256 pre-hashed input.
+async function argon2idDerive(pw1, pw2, salt) {
   const pw1Hash = crypto.createHash('sha256').update(pw1, 'utf8').digest();
   const pw2Hash = crypto.createHash('sha256').update(pw2, 'utf8').digest();
   const combined = Buffer.concat([pw1Hash, pw2Hash]);
-  return crypto.scryptSync(combined, salt, 32, { N: 16384, r: 8, p: 1 });
+  return await argon2id({
+    password: combined,
+    salt,
+    parallelism: 1,
+    iterations: 3,
+    memorySize: 65536,
+    hashLength: 32,
+    outputType: 'binary',
+  });
 }
 
-function localEncrypt(plaintext, pw1, pw2) {
+async function localEncrypt(plaintext, pw1, pw2) {
   const salt = crypto.randomBytes(32);
   const iv = crypto.randomBytes(16);
-  const key = scryptDerive(pw1, pw2, salt);
+  const key = await argon2idDerive(pw1, pw2, salt);
 
   const ptBuf = Buffer.from(plaintext);
   const lenBuf = Buffer.alloc(4);
@@ -107,7 +116,7 @@ function localEncrypt(plaintext, pw1, pw2) {
   return { ciphertext: ciphertext.toString('hex'), controlData: controlData.toString('hex') };
 }
 
-function localDecrypt(ciphertextHex, pw1, pw2, controlDataHex) {
+async function localDecrypt(ciphertextHex, pw1, pw2, controlDataHex) {
   const ct = Buffer.from(ciphertextHex, 'hex');
   const ctrl = Buffer.from(controlDataHex, 'hex');
 
@@ -115,7 +124,7 @@ function localDecrypt(ciphertextHex, pw1, pw2, controlDataHex) {
   const iv = ct.subarray(32, 48);
   const encrypted = ct.subarray(48);
 
-  const key = scryptDerive(pw1, pw2, salt);
+  const key = await argon2idDerive(pw1, pw2, salt);
   const decipher = crypto.createDecipheriv('aes-256-ctr', key, iv);
   const xored = Buffer.concat([decipher.update(encrypted), decipher.final()]);
 
@@ -126,13 +135,13 @@ function localDecrypt(ciphertextHex, pw1, pw2, controlDataHex) {
   return payload.subarray(4, 4 + len).toString();
 }
 
-function localDeny(ciphertextHex, pw1, pw2, fakePlaintext) {
+async function localDeny(ciphertextHex, pw1, pw2, fakePlaintext) {
   const ct = Buffer.from(ciphertextHex, 'hex');
   const salt = ct.subarray(0, 32);
   const iv = ct.subarray(32, 48);
   const encrypted = ct.subarray(48);
 
-  const key = scryptDerive(pw1, pw2, salt);
+  const key = await argon2idDerive(pw1, pw2, salt);
   const decipher = crypto.createDecipheriv('aes-256-ctr', key, iv);
   const xored = Buffer.concat([decipher.update(encrypted), decipher.final()]);
 
@@ -276,7 +285,7 @@ const TOOLS = [
   // ─── Local tools (no API key needed, runs on agent's machine) ───
   {
     name: 'deny_local_encrypt',
-    description: 'Encrypt text locally using deny.sh algorithm. No API call, no server, runs entirely on your machine. Same algorithm as the API (AES-256-CTR + scrypt + XOR composition).',
+    description: 'Encrypt text locally using deny.sh algorithm. No API call, no server, runs entirely on your machine. Same algorithm as the API (AES-256-CTR + Argon2id + XOR composition).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -383,13 +392,13 @@ async function handleToolCall(name, args) {
 
     // Local tools (no API key needed)
     case 'deny_local_encrypt':
-      return localEncrypt(args.plaintext, args.password1, args.password2);
+      return await localEncrypt(args.plaintext, args.password1, args.password2);
 
     case 'deny_local_decrypt':
-      return { plaintext: localDecrypt(args.ciphertext, args.password1, args.password2, args.controlData) };
+      return { plaintext: await localDecrypt(args.ciphertext, args.password1, args.password2, args.controlData) };
 
     case 'deny_local_create_decoy':
-      return { controlData: localDeny(args.ciphertext, args.password1, args.password2, args.fakePlaintext) };
+      return { controlData: await localDeny(args.ciphertext, args.password1, args.password2, args.fakePlaintext) };
 
     case 'deny_local_shamir_split':
       return { shares: localShamirSplit(args.secret, args.threshold, args.shares) };

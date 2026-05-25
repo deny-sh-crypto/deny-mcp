@@ -1,6 +1,7 @@
 {
   "name": "deny-sh-mcp",
-  "version": "1.0.0",
+  "version": "2.0.2",
+  "mcpName": "sh.deny/deny-sh",
   "description": "Model Context Protocol server for deny.sh deniable encryption. Lets any MCP-compatible AI agent call deny.sh tools.",
   "main": "deny-mcp-server.cjs",
   "bin": {
@@ -9,8 +10,7 @@
   "files": [
     "deny-mcp-server.cjs",
     "README.md",
-    "LICENSE",
-    "COMMERCIAL-LICENSE.md"
+    "LICENSE"
   ],
   "scripts": {
     "start": "node deny-mcp-server.cjs",
@@ -31,14 +31,17 @@
   "homepage": "https://deny.sh",
   "repository": {
     "type": "git",
-    "url": "https://github.com/deny-sh-crypto/deny-mcp"
+    "url": "git+https://github.com/deny-sh-crypto/deny-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/deny-sh-crypto/deny-mcp/issues"
+    "url": "https://deny.sh/contact"
   },
   "author": "deny.sh",
-  "license": "AGPL-3.0-or-later",
+  "license": "Apache-2.0",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "hash-wasm": "^4.12.0"
   }
 }

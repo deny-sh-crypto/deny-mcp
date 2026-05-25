@@ -1,8 +1,10 @@
 # deny-sh-mcp
 
-Model Context Protocol server for [deny.sh](https://deny.sh) deniable encryption. Lets any MCP-compatible AI agent call deny.sh tools.
+Model Context Protocol server for [deny.sh](https://deny.sh), the deniability infrastructure. Lets any MCP-compatible AI agent call deny.sh tools so the real credential never enters the agent's context window. When the agent gets prompt-injected, what gets surrendered is the decoy.
 
-**[deny.sh](https://deny.sh)** · [Whitepaper](https://deny.sh/whitepaper) · [Verify it yourself](https://deny.sh/verify) · [TypeScript SDK](https://github.com/deny-sh-crypto/deny-js)
+This package wraps the **Operate pillar** of deny.sh (hosted API mode) and the **Encrypt pillar** (local, offline mode) behind eleven MCP tools.
+
+**[deny.sh](https://deny.sh)** · [Agent docs](https://deny.sh/agents) · [Whitepaper](https://deny.sh/whitepaper) · [Verify it yourself](https://deny.sh/verify) · [TypeScript SDK](https://github.com/deny-sh-crypto/deny-js)
 
 ## What this is
 
@@ -67,7 +69,7 @@ Same shape. Most agents accept the standard MCP server config block above. Check
 
 | Variable        | Default                  | Notes                                        |
 |-----------------|--------------------------|----------------------------------------------|
-| `DENY_API_KEY`  | (required)               | Bearer key from https://deny.sh/register     |
+| `DENY_API_KEY`  | (optional)               | Bearer key from https://deny.sh/register. Required only for API-mode tools; local-mode tools work without it. |
 | `DENY_API_URL`  | `https://deny.sh/api`    | Override for staging / private deployments   |
 
 ## Threat model
@@ -76,15 +78,20 @@ Same shape. Most agents accept the standard MCP server config block above. Check
 
 **Local-mode tools** (`deny_local_*`) run the same algorithm entirely on the agent's host machine. No network call, no plaintext leaves the process. Use these when you want offline-only encryption.
 
-In either mode, the cryptographic primitive itself is the same: AES-256-CTR + scrypt + XOR composition. See the deny.sh [whitepaper](https://deny.sh/whitepaper) for the full threat model on the primitive.
+In either mode, the cryptographic primitive itself is the same: AES-256-CTR + Argon2id + XOR composition, byte-for-byte compatible across the TypeScript / Python / Go / Rust SDKs. Full wire format: [deny.sh/sdks](https://deny.sh/sdks). Full threat model: [deny.sh/threat-model](https://deny.sh/threat-model). Cryptographic argument: [deny.sh/whitepaper](https://deny.sh/whitepaper) §5.
+
+There is no per-ciphertext cap on the number of decoys an agent can derive via `deny_create_decoy` / `deny_local_create_decoy`. Each fresh call generates a new control file that opens the same ciphertext to a different cover story, up to the inner-payload envelope (ciphertext length minus 48-byte header minus 4-byte length prefix).
 
 ## License
 
-Dual-licensed:
+**Apache License 2.0**. See [LICENSE](LICENSE).
 
-- **AGPL-3.0-or-later** for open-source use. See [LICENSE](LICENSE).
-- **Commercial license** available for proprietary integrations. See [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md) and email `licensing@deny.sh`.
+The MCP server is a thin wrapper around the deny.sh primitive. Apache 2.0 because the primitive itself is Apache 2.0. Free for commercial and proprietary use. See [deny.sh/licensing](https://deny.sh/licensing).
 
 ## Source
 
 This file mirrors the canonical source in the private deny.sh monorepo. Releases are tagged from there.
+
+## Reporting vulnerabilities
+
+Found a bug in the MCP server or the underlying crypto? Email security@deny.sh (PGP fingerprint and disclosure policy at [deny.sh/disclosure](https://deny.sh/disclosure)). Please give us a reasonable window before public disclosure.
