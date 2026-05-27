@@ -1,6 +1,6 @@
 {
   "name": "deny-sh-mcp",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "mcpName": "sh.deny/deny-sh",
   "description": "Model Context Protocol server for deny.sh deniable encryption. Lets any MCP-compatible AI agent call deny.sh tools.",
   "main": "deny-mcp-server.cjs",
