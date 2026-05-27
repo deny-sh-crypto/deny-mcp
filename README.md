@@ -14,7 +14,7 @@ A standalone MCP server that exposes deny.sh's deniable-encryption primitive as 
 npx deny-sh-mcp
 ```
 
-Single file. Zero runtime dependencies. Speaks stdio JSON-RPC, talks to the deny.sh public API over HTTPS with a user-supplied bearer key.
+Single-file server (~25KB). One runtime dependency (`hash-wasm` for portable Argon2id, used by the local-mode tools). Speaks stdio JSON-RPC, talks to the deny.sh public API over HTTPS with a user-supplied bearer key.
 
 ## Tools
 
